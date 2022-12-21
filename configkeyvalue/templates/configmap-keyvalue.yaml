@@ -1,0 +1,45 @@
+{{ range $path, $_ :=  .Files.Glob  "tmp/*" }}
+---
+apiVersion: v1
+kind: ConfigMap
+{{ $file := trimPrefix "tmp/" $path  -}}
+{{ $ext := $file | ext -}}
+{{ $name := trimSuffix $ext $file -}}
+metadata:
+  name: {{ print $name }}
+data: {{ range $.Files.Lines $path }}
+  {{ if ne . "" -}}
+  {{ $split := split "=" . -}}
+  {{ $l := len $split -}}
+  {{ $length := sub $l 1 | int -}}
+  {{ $value := "" -}}
+  {{ print $split._0 }}: {{ range $key, $val := $split -}}
+  {{ if ne $key "_0" -}}
+  {{ $leng := $length | toString -}}
+  {{ $i := printf "_%s" $leng -}}
+  {{ if eq $key $i -}}
+  {{ $string := index $split $key -}}
+  {{ print $string -}}
+  {{ else -}}
+  {{ $string := index $split $key -}}
+  {{ print $string -}}{{ print "=" -}}
+  {{ end -}}
+  {{ end -}}
+  {{ end -}}
+  {{ end -}}
+  {{ end -}}
+
+{{ end -}}
+
+
+{{- range $i, $val := .Values.configmaps }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $val.name }}
+data:
+  {{- with $val.data }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- end }}
